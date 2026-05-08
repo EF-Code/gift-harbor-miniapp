@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Telegram Gifts API miniapp" />
+    <title>Telegram Gifts Miniapp</title>
+    <link rel="stylesheet" href="/miniapp.css" />
+    <script defer src="/miniapp.js"></script>
+  </head>
+  <body>
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Customer miniapp</p>
+          <h1>Test a live Telegram Gifts API key from a static Vercel page.</h1>
+          <p class="lede">
+            Point this page at your deployed API, paste a key, and run the same reads and webhook checks
+            your customers will use.
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="status-row">
+            <span class="label">Connection</span>
+            <span id="connectionState" class="pill">Idle</span>
+          </div>
+          <div class="status-row">
+            <span class="label">API base</span>
+            <span id="baseEcho" class="mono">not set</span>
+          </div>
+          <div class="status-row">
+            <span class="label">Key</span>
+            <span id="keyEcho" class="mono">not set</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <h2>Connection</h2>
+        <div class="grid-two">
+          <div>
+            <label for="apiBaseUrl">API base URL</label>
+            <input id="apiBaseUrl" type="url" placeholder="https://api.yourdomain.com" />
+          </div>
+          <div>
+            <label for="apiKey">API key</label>
+            <input id="apiKey" type="password" placeholder="live_xxx" />
+          </div>
+        </div>
+        <div class="grid-two">
+          <div>
+            <label for="adminToken">Admin token</label>
+            <input id="adminToken" type="password" placeholder="optional, for admin endpoints" />
+          </div>
+          <div>
+            <label for="giftAddress">Gift address</label>
+            <input id="giftAddress" type="text" placeholder="EQ..." />
+          </div>
+        </div>
+        <div class="grid-two">
+          <div>
+            <label for="ownerAddress">Owner address</label>
+            <input id="ownerAddress" type="text" placeholder="EQ..." />
+          </div>
+          <div>
+            <label for="webhookUrl">Webhook URL</label>
+            <input id="webhookUrl" type="url" placeholder="https://webhook.site/..." />
+          </div>
+        </div>
+        <div>
+          <label for="batchAddresses">Batch addresses, one per line</label>
+          <textarea id="batchAddresses" rows="5" placeholder="EQ...
+EQ...
+EQ..."></textarea>
+        </div>
+        <div class="actions">
+          <button id="saveButton" class="primary">Save</button>
+          <button id="loadKeyButton" class="secondary">Issue demo key</button>
+          <button id="healthButton" class="secondary">Health check</button>
+          <button id="dashboardButton" class="secondary">Load dashboard</button>
+        </div>
+        <p class="hint">
+          The settings are stored locally in your browser. For a real test, point the base URL to your deployed API.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>API actions</h2>
+          <span class="hint">Each action uses the API key above</span>
+        </div>
+        <div class="actions">
+          <button id="giftButton" class="primary">Get gift</button>
+          <button id="ownerButton" class="secondary">Get owner inventory</button>
+          <button id="batchButton" class="secondary">Batch lookup</button>
+          <button id="registerWebhookButton" class="secondary">Register webhook</button>
+          <button id="testWebhookButton" class="secondary">Test webhook</button>
+          <button id="collectionsButton" class="secondary">Discover collections</button>
+        </div>
+      </section>
+
+      <section class="dashboard">
+        <article class="card">
+          <div class="card-head">
+            <h3>Metrics</h3>
+            <span class="hint">/api/dashboard</span>
+          </div>
+          <div id="metricsGrid" class="metric-grid"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>Recent response</h3>
+            <span class="hint">Last API call</span>
+          </div>
+          <pre id="response" class="code"></pre>
+        </article>
+      </section>
+
+      <section class="dashboard">
+        <article class="card">
+          <div class="card-head">
+            <h3>Customer view</h3>
+            <span class="hint">Keys, plans, usage, webhook status</span>
+          </div>
+          <div id="customerPanel" class="stack"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>Collections</h3>
+            <span class="hint">Tracked gift collections</span>
+          </div>
+          <div id="collectionsPanel" class="stack"></div>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3>Request log</h3>
+          <span class="hint">Last several client-side calls</span>
+        </div>
+        <div id="log" class="stack"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3>Split Deploy Guide</h3>
+          <span class="hint">Vercel frontend + separate API backend</span>
+        </div>
+        <div class="guide-grid">
+          <div class="guide-step">
+            <strong>1. Deploy the frontend to Vercel</strong>
+            <p>Import this repo, keep the root directory, and deploy with no build step.</p>
+          </div>
+          <div class="guide-step">
+            <strong>2. Deploy the API somewhere else</strong>
+            <p>Use a backend platform or VPS that can run <span class="mono">node server.js</span>.</p>
+          </div>
+          <div class="guide-step">
+            <strong>3. Set real backend env vars</strong>
+            <p>Configure <span class="mono">PUBLIC_URL</span>, <span class="mono">ADMIN_TOKEN</span>, and production secrets.</p>
+          </div>
+          <div class="guide-step">
+            <strong>4. Point the miniapp at the backend</strong>
+            <p>Paste the backend HTTPS URL into the <span class="mono">API base URL</span> field.</p>
+          </div>
+          <div class="guide-step">
+            <strong>5. Smoke test</strong>
+            <p>Load dashboard, issue a demo key, call gift endpoints, and test a webhook.</p>
+          </div>
+          <div class="guide-step">
+            <strong>6. Go live</strong>
+            <p>After Stripe and TONAPI are wired, move from demo key testing to real subscription flow.</p>
+          </div>
+        </div>
+        <div class="guide-actions">
+          <button id="copyGuideButton" class="secondary">Copy guide</button>
+          <button id="openVercelButton" class="primary">Open Vercel deploy docs</button>
+        </div>
+        <pre id="guideText" class="code guide-code"></pre>
+      </section>
+    </main>
+  </body>
+</html>
