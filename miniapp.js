@@ -34,6 +34,7 @@ const guideText = [
 ].join('\n');
 
 const $ = (id) => document.getElementById(id);
+let toastTimer = null;
 
 function setState() {
   $('apiBaseUrl').value = store.apiBaseUrl;
@@ -90,6 +91,45 @@ function log(kind, message, payload) {
         </div>`
     )
     .join('');
+}
+
+function vibrate(pattern = 18) {
+  if (navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+}
+
+function flashButton(button, kind = 'success') {
+  if (!button) return;
+  button.classList.add('button-pulse');
+  button.classList.toggle('button-success', kind === 'success');
+  button.classList.toggle('button-error', kind === 'error');
+  window.setTimeout(() => {
+    button.classList.remove('button-pulse', 'button-success', 'button-error');
+  }, 260);
+}
+
+function showToast(message, kind = 'info') {
+  const toast = $('toast');
+  if (!toast) return;
+
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+
+  toast.textContent = message;
+  toast.style.borderColor =
+    kind === 'success' ? 'rgba(146, 255, 215, 0.28)' : kind === 'error' ? 'rgba(255, 127, 154, 0.28)' : 'rgba(121, 212, 255, 0.22)';
+  toast.classList.add('show');
+  toastTimer = window.setTimeout(() => {
+    toast.classList.remove('show');
+  }, 1800);
+}
+
+function feedback(button, message, kind = 'success') {
+  vibrate(kind === 'error' ? [20, 40, 20] : 18);
+  flashButton(button, kind);
+  showToast(message, kind);
 }
 
 function authHeaders() {
@@ -189,8 +229,10 @@ function renderMetrics(data) {
 }
 
 async function refreshDashboard() {
+  const button = $('dashboardButton');
   saveState();
   $('connectionState').textContent = 'Loading';
+  feedback(button, 'Loading dashboard...', 'info');
   try {
     const query = new URLSearchParams();
     if (store.apiKey) query.set('api_key', store.apiKey);
@@ -201,14 +243,18 @@ async function refreshDashboard() {
     renderMetrics(data);
     $('connectionState').textContent = 'Connected';
     log('dashboard', 'Loaded dashboard overview', data?.service);
+    feedback(button, 'Dashboard loaded', 'success');
   } catch (error) {
     $('connectionState').textContent = 'Error';
     log('error', error.message, error.body || null);
+    feedback(button, error.message, 'error');
   }
 }
 
 async function issueDemoKey() {
+  const button = $('loadKeyButton');
   saveState();
+  feedback(button, 'Requesting demo key...', 'info');
   const data = await callApi('/api/subscriptions/create', {
     method: 'POST',
     body: JSON.stringify({
@@ -224,63 +270,85 @@ async function issueDemoKey() {
   }
 
   log('billing', 'Issued a demo API key', data);
+  feedback(button, 'Demo key issued', 'success');
 }
 
 async function doHealthCheck() {
+  const button = $('healthButton');
+  feedback(button, 'Checking health...', 'info');
   const data = await callApi('/healthz', { method: 'GET', headers: {} });
   log('health', 'Fetched health check', data);
+  feedback(button, 'Health check succeeded', 'success');
 }
 
 async function getGift() {
+  const button = $('giftButton');
   const address = $('giftAddress').value.trim();
   if (!address) throw new Error('Set a gift address first');
+  feedback(button, 'Fetching gift...', 'info');
   const data = await callApi(`/api/gifts/${encodeURIComponent(address)}`, { method: 'GET' });
   log('gift', `Loaded gift ${address}`, data);
+  feedback(button, 'Gift loaded', 'success');
 }
 
 async function getOwner() {
+  const button = $('ownerButton');
   const owner = $('ownerAddress').value.trim();
   if (!owner) throw new Error('Set an owner address first');
+  feedback(button, 'Fetching inventory...', 'info');
   const data = await callApi(`/api/gifts/owner/${encodeURIComponent(owner)}`, { method: 'GET' });
   log('owner', `Loaded owner inventory for ${owner}`, data);
+  feedback(button, 'Owner inventory loaded', 'success');
 }
 
 async function batchLookup() {
+  const button = $('batchButton');
   const addresses = $('batchAddresses').value
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
   if (!addresses.length) throw new Error('Provide at least one address');
+  feedback(button, 'Running batch lookup...', 'info');
   const data = await callApi('/api/gifts/batch', {
     method: 'POST',
     body: JSON.stringify({ addresses })
   });
   log('batch', `Loaded ${data.total} addresses`, data);
+  feedback(button, 'Batch lookup complete', 'success');
 }
 
 async function registerWebhook() {
+  const button = $('registerWebhookButton');
   const webhookUrl = $('webhookUrl').value.trim();
   if (!webhookUrl) throw new Error('Set a webhook URL first');
+  feedback(button, 'Registering webhook...', 'info');
   const data = await callApi('/api/webhooks/register', {
     method: 'POST',
     body: JSON.stringify({ webhookUrl })
   });
   log('webhook', 'Registered webhook URL', data);
+  feedback(button, 'Webhook registered', 'success');
 }
 
 async function testWebhook() {
+  const button = $('testWebhookButton');
+  feedback(button, 'Testing webhook...', 'info');
   const data = await callApi('/api/webhooks/test', {
     method: 'POST',
     body: JSON.stringify({})
   });
   log('webhook', 'Triggered webhook test', data);
+  feedback(button, 'Webhook test sent', 'success');
 }
 
 async function discoverCollections() {
+  const button = $('collectionsButton');
+  feedback(button, 'Discovering collections...', 'info');
   const data = await callApi('/api/collections/discover', {
     method: 'GET'
   });
   log('collections', 'Requested collection discovery', data);
+  feedback(button, 'Collections refreshed', 'success');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -301,12 +369,14 @@ document.addEventListener('DOMContentLoaded', () => {
     copyGuideButton.addEventListener('click', async () => {
       await navigator.clipboard.writeText(guideText);
       log('guide', 'Copied split-deploy guide to clipboard');
+      feedback(copyGuideButton, 'Guide copied', 'success');
     });
   }
 
   const openVercelButton = $('openVercelButton');
   if (openVercelButton) {
     openVercelButton.addEventListener('click', () => {
+      feedback(openVercelButton, 'Opening Vercel docs', 'info');
       window.open('https://vercel.com/docs', '_blank', 'noopener,noreferrer');
     });
   }
